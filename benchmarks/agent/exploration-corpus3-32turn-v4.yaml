@@ -1,0 +1,454 @@
+version: 1
+command: agent-bench
+status: ok
+submission_audit:
+  submissions:
+  - task: access-log-summary
+    trial: 1
+    successful_public_tests: 2
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: access-log-summary
+    trial: 2
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: access-log-summary
+    trial: 3
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: access-log-summary
+    trial: 5
+    successful_public_tests: 2
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: access-log-summary
+    trial: 6
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: access-log-summary
+    trial: 7
+    successful_public_tests: 2
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: access-log-summary
+    trial: 8
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: access-log-summary
+    trial: 9
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: access-log-summary
+    trial: 10
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: host-range-expand
+    trial: 1
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: host-range-expand
+    trial: 4
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: host-range-expand
+    trial: 5
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: host-range-expand
+    trial: 6
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: host-range-expand
+    trial: 7
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: host-range-expand
+    trial: 8
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: host-range-expand
+    trial: 9
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: host-range-expand
+    trial: 10
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: join-orders
+    trial: 1
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: join-orders
+    trial: 2
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: join-orders
+    trial: 3
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: join-orders
+    trial: 4
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: join-orders
+    trial: 5
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: join-orders
+    trial: 6
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: join-orders
+    trial: 9
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: join-orders
+    trial: 10
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 1
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 2
+    successful_public_tests: 2
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 3
+    successful_public_tests: 2
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 4
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 5
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 6
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 7
+    successful_public_tests: 2
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 8
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 9
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: table-render
+    trial: 1
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: table-render
+    trial: 3
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: table-render
+    trial: 4
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: table-render
+    trial: 7
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: table-render
+    trial: 8
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: table-render
+    trial: 9
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: table-render
+    trial: 10
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  verified: 41
+  total: 41
+evaluation_source: report.yaml
+evaluation: null
+execution:
+  jobs: 8
+  generation_wall_ms: 395494.91963302717
+  evaluation_wall_ms: 177131.5386829665
+directory: /home/felix/projects/experiments/helix/helix/runtime/agent-bench/luna-corpus3-five-task-32turn
+provenance:
+  schema: helix.agent-bench.v1
+  protocol_version: 4
+  context_delivery: workspace-documents
+  jobs: 8
+  max_turns: 32
+  max_tool_calls: 64
+  retry_of: null
+  test_timeout_seconds: 20.0
+  task_version: 3
+  model: openai/gpt-6-luna
+  trials: 10
+  samples: 3
+  temperature: 0.7
+  max_tokens: 4096
+  context_sha256: f5ff8f6c2c15c037849592e08e774a0be2df932b0bd6e585685917181106e717
+  task_source_sha256: 6727ea7cc527b3bf24eba70fb924938726f9a4c9745ee01e55e80ea3f3744de8
+  git_revision: 4e232d293771424d93eea4501c88353be1946483
+  git_diff_sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  binary_sha256: 72c2f2c8e6818f897c7fead51e085e0697dd0fb3543b71c37cac1001977af9a5
+  environment:
+    platform: Linux-7.3.0-10-generic-x86_64-with-glibc2.44
+    python: 3.14.8
+  timing_contract: Generation is concurrent. After all generation stops, CLI correctness
+    and timing run serially; timings include startup, parsing, linking, execution
+    and serialization, with one warmup and n=256. No build or API time; debug build.
+mode: cli
+summary:
+  access-log-summary:
+    model_requests: 217
+    tool_calls: 239
+    cli_calls: 119
+    public_test_calls: 15
+    public_test_successes: 12
+    attempts: 10
+    evaluated: 9
+    successes: 0
+    pass_rate: 0.0
+    pass_rate_wilson_95:
+    - 0
+    - 0.2775327998628892
+    mean_case_score: 0.7000000000000001
+    usage_observations: 10
+    prompt_tokens: 3991628
+    completion_tokens: 70041
+    total_tokens: 4061669
+    mean_total_tokens_per_attempt: 406166.9
+    total_tokens_per_success: null
+    reported_cost_usd: 0.1007778
+    cost_observations: 10
+    median_successful_cli_wall_ms: null
+    median_generation_ms: 60374.04773989692
+    median_runtime_ratio_to_reference: null
+  host-range-expand:
+    model_requests: 220
+    tool_calls: 252
+    cli_calls: 137
+    public_test_calls: 17
+    public_test_successes: 8
+    attempts: 10
+    evaluated: 8
+    successes: 1
+    pass_rate: 0.1
+    pass_rate_wilson_95:
+    - 0.017876213095072896
+    - 0.4041500267952385
+    mean_case_score: 0.6166666666666667
+    usage_observations: 10
+    prompt_tokens: 3746956
+    completion_tokens: 83560
+    total_tokens: 3830516
+    mean_total_tokens_per_attempt: 383051.6
+    total_tokens_per_success: 3830516.0
+    reported_cost_usd: 0.10314504000000001
+    cost_observations: 10
+    median_successful_cli_wall_ms: 2532.3663109447807
+    median_generation_ms: 63154.462247912306
+    median_runtime_ratio_to_reference: 33.53822298289619
+  join-orders:
+    model_requests: 195
+    tool_calls: 204
+    cli_calls: 98
+    public_test_calls: 28
+    public_test_successes: 8
+    attempts: 10
+    evaluated: 8
+    successes: 2
+    pass_rate: 0.2
+    pass_rate_wilson_95:
+    - 0.05668215145437519
+    - 0.5098375284633583
+    mean_case_score: 0.7000000000000001
+    usage_observations: 10
+    prompt_tokens: 2463305
+    completion_tokens: 35246
+    total_tokens: 2498551
+    mean_total_tokens_per_attempt: 249855.1
+    total_tokens_per_success: 1249275.5
+    reported_cost_usd: 0.0571271
+    cost_observations: 10
+    median_successful_cli_wall_ms: 847.5645640282892
+    median_generation_ms: 36547.306891472545
+    median_runtime_ratio_to_reference: 34.13610899199328
+  json-lines-aggregate:
+    model_requests: 204
+    tool_calls: 210
+    cli_calls: 92
+    public_test_calls: 14
+    public_test_successes: 12
+    attempts: 10
+    evaluated: 9
+    successes: 9
+    pass_rate: 0.9
+    pass_rate_wilson_95:
+    - 0.5958499732047615
+    - 0.9821237869049271
+    mean_case_score: 0.9
+    usage_observations: 10
+    prompt_tokens: 3123901
+    completion_tokens: 56077
+    total_tokens: 3179978
+    mean_total_tokens_per_attempt: 317997.8
+    total_tokens_per_success: 353330.8888888889
+    reported_cost_usd: 0.079003
+    cost_observations: 10
+    median_successful_cli_wall_ms: 29.83776305336505
+    median_generation_ms: 44808.658672263846
+    median_runtime_ratio_to_reference: 1.2263580827970886
+  table-render:
+    model_requests: 239
+    tool_calls: 270
+    cli_calls: 137
+    public_test_calls: 23
+    public_test_successes: 7
+    attempts: 10
+    evaluated: 7
+    successes: 0
+    pass_rate: 0.0
+    pass_rate_wilson_95:
+    - 0
+    - 0.2775327998628892
+    mean_case_score: 0.5833333333333334
+    usage_observations: 10
+    prompt_tokens: 4121718
+    completion_tokens: 71029
+    total_tokens: 4192747
+    mean_total_tokens_per_attempt: 419274.7
+    total_tokens_per_success: null
+    reported_cost_usd: 0.099490765
+    cost_observations: 10
+    median_successful_cli_wall_ms: null
+    median_generation_ms: 63243.07924567256
+    median_runtime_ratio_to_reference: null

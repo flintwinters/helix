@@ -1,0 +1,503 @@
+version: 1
+command: agent-bench
+status: ok
+submission_audit:
+  submissions:
+  - task: access-log-summary
+    trial: 1
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: access-log-summary
+    trial: 2
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: access-log-summary
+    trial: 3
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: access-log-summary
+    trial: 4
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: access-log-summary
+    trial: 5
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: access-log-summary
+    trial: 6
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: access-log-summary
+    trial: 7
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: access-log-summary
+    trial: 8
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: access-log-summary
+    trial: 9
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: access-log-summary
+    trial: 10
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: host-range-expand
+    trial: 1
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: host-range-expand
+    trial: 2
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: host-range-expand
+    trial: 3
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: host-range-expand
+    trial: 4
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: host-range-expand
+    trial: 5
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: host-range-expand
+    trial: 6
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: host-range-expand
+    trial: 7
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: host-range-expand
+    trial: 8
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: host-range-expand
+    trial: 9
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: host-range-expand
+    trial: 10
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: join-orders
+    trial: 3
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: join-orders
+    trial: 4
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: join-orders
+    trial: 5
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: join-orders
+    trial: 6
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: join-orders
+    trial: 7
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: join-orders
+    trial: 8
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: join-orders
+    trial: 9
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: join-orders
+    trial: 10
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 1
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 2
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 3
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 4
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 5
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 6
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 7
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 8
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 9
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 10
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: table-render
+    trial: 1
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: table-render
+    trial: 2
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: table-render
+    trial: 3
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: table-render
+    trial: 4
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: table-render
+    trial: 5
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: table-render
+    trial: 6
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: table-render
+    trial: 7
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: table-render
+    trial: 8
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: table-render
+    trial: 9
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: table-render
+    trial: 10
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  verified: 48
+  total: 48
+evaluation_source: report.yaml
+evaluation: null
+execution:
+  jobs: 8
+  generation_wall_ms: 295161.55246299604
+  evaluation_wall_ms: 78273.8339169955
+directory: /home/felix/projects/experiments/helix/helix/runtime/agent-bench/luna-corpus3-five-task-auto-accept-v5-rerun
+provenance:
+  schema: helix.agent-bench.v1
+  protocol_version: 5
+  context_delivery: workspace-documents
+  jobs: 8
+  max_turns: 32
+  max_tool_calls: 64
+  retry_of: null
+  test_timeout_seconds: 10.0
+  task_version: 3
+  model: openai/gpt-6-luna
+  trials: 10
+  samples: 3
+  temperature: 0.7
+  max_tokens: 4096
+  context_sha256: a425c255cf7ae811dd55fd4f0e9f63cded3b5b7b743e8f5d743754cd12777809
+  task_source_sha256: 6727ea7cc527b3bf24eba70fb924938726f9a4c9745ee01e55e80ea3f3744de8
+  git_revision: e6169f08fc414dccb39d83e38e1bac8f999834c8
+  git_diff_sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  binary_sha256: 1378304b44c1f28d8c332c73e1f4b630406a6fedb060e8b34278168eca3961f6
+  environment:
+    platform: Linux-7.3.0-10-generic-x86_64-with-glibc2.44
+    python: 3.14.8
+  timing_contract: Generation is concurrent. After all generation stops, CLI correctness
+    and timing run serially; timings include startup, parsing, linking, execution
+    and serialization, with one warmup and n=256. No build or API time; debug build.
+mode: cli
+summary:
+  access-log-summary:
+    model_requests: 143
+    tool_calls: 185
+    cli_calls: 94
+    public_test_calls: 28
+    public_test_successes: 10
+    attempts: 10
+    evaluated: 10
+    successes: 10
+    pass_rate: 1.0
+    pass_rate_wilson_95:
+    - 0.7224672001371107
+    - 0.9999999999999999
+    mean_case_score: 1.0
+    usage_observations: 10
+    prompt_tokens: 2073279
+    completion_tokens: 41445
+    total_tokens: 2114724
+    mean_total_tokens_per_attempt: 211472.4
+    total_tokens_per_success: 211472.4
+    reported_cost_usd: 0.06122315
+    cost_observations: 10
+    median_successful_cli_wall_ms: 26.597754498652648
+    median_generation_ms: 37989.74972999713
+    median_runtime_ratio_to_reference: 0.6401433642406584
+  host-range-expand:
+    model_requests: 132
+    tool_calls: 142
+    cli_calls: 68
+    public_test_calls: 23
+    public_test_successes: 10
+    attempts: 10
+    evaluated: 10
+    successes: 7
+    pass_rate: 0.7
+    pass_rate_wilson_95:
+    - 0.39677814746114537
+    - 0.8922087325936989
+    mean_case_score: 0.9
+    usage_observations: 10
+    prompt_tokens: 1653300
+    completion_tokens: 27749
+    total_tokens: 1681049
+    mean_total_tokens_per_attempt: 168104.9
+    total_tokens_per_success: 240149.85714285713
+    reported_cost_usd: 0.04853148
+    cost_observations: 10
+    median_successful_cli_wall_ms: 78.22740800475003
+    median_generation_ms: 28180.45928650463
+    median_runtime_ratio_to_reference: 1.0650167939705293
+  join-orders:
+    model_requests: 211
+    tool_calls: 217
+    cli_calls: 95
+    public_test_calls: 50
+    public_test_successes: 8
+    attempts: 10
+    evaluated: 8
+    successes: 7
+    pass_rate: 0.7
+    pass_rate_wilson_95:
+    - 0.39677814746114537
+    - 0.8922087325936989
+    mean_case_score: 0.7833333333333333
+    usage_observations: 10
+    prompt_tokens: 3151569
+    completion_tokens: 45874
+    total_tokens: 3197443
+    mean_total_tokens_per_attempt: 319744.3
+    total_tokens_per_success: 456777.5714285714
+    reported_cost_usd: 0.07531584
+    cost_observations: 10
+    median_successful_cli_wall_ms: 28.187251002236735
+    median_generation_ms: 62510.77778999388
+    median_runtime_ratio_to_reference: 1.1524904153973676
+  json-lines-aggregate:
+    model_requests: 123
+    tool_calls: 132
+    cli_calls: 56
+    public_test_calls: 19
+    public_test_successes: 10
+    attempts: 10
+    evaluated: 10
+    successes: 9
+    pass_rate: 0.9
+    pass_rate_wilson_95:
+    - 0.5958499732047615
+    - 0.9821237869049271
+    mean_case_score: 0.95
+    usage_observations: 10
+    prompt_tokens: 1552388
+    completion_tokens: 25757
+    total_tokens: 1578145
+    mean_total_tokens_per_attempt: 157814.5
+    total_tokens_per_success: 175349.44444444444
+    reported_cost_usd: 0.04516312
+    cost_observations: 10
+    median_successful_cli_wall_ms: 16.453609001473524
+    median_generation_ms: 32613.88894198535
+    median_runtime_ratio_to_reference: 0.6851220548983074
+  table-render:
+    model_requests: 111
+    tool_calls: 135
+    cli_calls: 64
+    public_test_calls: 23
+    public_test_successes: 10
+    attempts: 10
+    evaluated: 10
+    successes: 10
+    pass_rate: 1.0
+    pass_rate_wilson_95:
+    - 0.7224672001371107
+    - 0.9999999999999999
+    mean_case_score: 1.0
+    usage_observations: 10
+    prompt_tokens: 1247961
+    completion_tokens: 25415
+    total_tokens: 1273376
+    mean_total_tokens_per_attempt: 127337.6
+    total_tokens_per_success: 127337.6
+    reported_cost_usd: 0.0430042
+    cost_observations: 10
+    median_successful_cli_wall_ms: 71.31359599952702
+    median_generation_ms: 30161.46372000003
+    median_runtime_ratio_to_reference: 0.7650702687210018

@@ -1,0 +1,137 @@
+version: 1
+command: agent-bench
+status: ok
+submission_audit:
+  submissions:
+  - task: json-lines-aggregate
+    trial: 1
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 2
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 3
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 4
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 5
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 6
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 7
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 8
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 9
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  - task: json-lines-aggregate
+    trial: 10
+    successful_public_tests: 1
+    source_matches_submission: true
+    workspace_matches_tested_fingerprint: true
+    evaluation_matches_workspace: true
+    verified: true
+  verified: 10
+  total: 10
+evaluation_source: report.yaml
+evaluation: null
+execution:
+  jobs: 8
+  generation_wall_ms: 84978.94354900927
+  evaluation_wall_ms: 3063.244812001358
+directory: /home/felix/projects/experiments/helix/helix/runtime/agent-bench/luna-json-lines-prompt-v5-run
+provenance:
+  schema: helix.agent-bench.v1
+  protocol_version: 5
+  context_delivery: workspace-documents
+  jobs: 8
+  max_turns: 32
+  max_tool_calls: 64
+  retry_of: null
+  test_timeout_seconds: 10.0
+  task_version: 3
+  model: openai/gpt-6-luna
+  trials: 10
+  samples: 3
+  temperature: 0.7
+  max_tokens: 4096
+  context_sha256: a425c255cf7ae811dd55fd4f0e9f63cded3b5b7b743e8f5d743754cd12777809
+  task_source_sha256: 70f45b134b1fd7581d56f52302a73492ea06140f3360c67e875fc2fee2451103
+  git_revision: a57f424e88d2d2630d8979955caf8d5239dc776d
+  git_diff_sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  binary_sha256: 1378304b44c1f28d8c332c73e1f4b630406a6fedb060e8b34278168eca3961f6
+  environment:
+    platform: Linux-7.3.0-10-generic-x86_64-with-glibc2.44
+    python: 3.14.8
+  timing_contract: Generation is concurrent. After all generation stops, CLI correctness
+    and timing run serially; timings include startup, parsing, linking, execution
+    and serialization, with one warmup and n=256. No build or API time; debug build.
+mode: cli
+summary:
+  json-lines-aggregate:
+    model_requests: 128
+    tool_calls: 159
+    cli_calls: 102
+    public_test_calls: 18
+    public_test_successes: 10
+    attempts: 10
+    evaluated: 10
+    successes: 10
+    pass_rate: 1.0
+    pass_rate_wilson_95:
+    - 0.7224672001371107
+    - 0.9999999999999999
+    mean_case_score: 1.0
+    usage_observations: 10
+    prompt_tokens: 1370913
+    completion_tokens: 26428
+    total_tokens: 1397341
+    mean_total_tokens_per_attempt: 139734.1
+    total_tokens_per_success: 139734.1
+    reported_cost_usd: 0.04186151
+    cost_observations: 10
+    median_successful_cli_wall_ms: 17.787183001928497
+    median_generation_ms: 32891.434969009424
+    median_runtime_ratio_to_reference: 0.7749650481560479

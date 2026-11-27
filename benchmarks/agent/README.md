@@ -3,9 +3,10 @@
 `./manage.py quality agent-bench` owns model coding experiments.
 `./manage.py test --suite agent_bench` verifies the harness offline; paid model
 calls are explicit experiments, never part of the default regression suite.
-The latest [50-attempt workspace baseline](baseline-workspace-5x10-v3.yaml) used
-protocol v3. Earlier final-chat measurements are
-retained below as historical data.
+The latest focused v5 follow-ups scored 10/10 each on host-range expansion and
+JSON Lines aggregation after targeted prompt and public-example clarifications.
+The broader five-task v5 run scored 43/50. These results and the earlier v4,
+workspace and final-chat measurements are described below.
 
 ## Protocol v5: accept on the first passing public test
 
@@ -16,8 +17,8 @@ folds to multi-step pipelines, but target common programming work rather than
 puzzles: hidden cases scale input to 256 elements, so solutions must stay within
 the 10-second and value-budget limits by using Helix's cost model (parameters,
 not repeated `let` reads; regex tokenizing; std sorting). Each task's Python oracle
-and passing Helix reference live beside it. The baseline below predates corpus v3;
-no v3-corpus run is recorded yet. The default is ten independent attempts per task. Each exports `solve(input)` from `candidate.yaml`.
+and passing Helix reference live beside it. The recorded corpus-v3 experiments
+below cover five of these tasks, not the full corpus. The default is ten independent attempts per task. Each exports `solve(input)` from `candidate.yaml`.
 
 Each CLI-assisted attempt has a separate workspace containing authoritative
 `LANGUAGE.md` and `LIBRARY.md` files and a read-only `public_test.yaml`. The test
@@ -128,6 +129,59 @@ submission, multi-turn usage, concurrent generation, isolated scoring and offlin
 replay. Historical v1/v2 runs below measured final chat-code submissions through
 the earlier inline-source tool interface. Their reported failures are real final
 program failures; those runs do not measure protocol v3's workspace workflow.
+
+## Corpus-v3 experiments: protocols v4 and v5
+
+Two runs used `openai/gpt-6-luna` on the same five corpus-v3 tasks, with ten
+independent attempts per task. The [v4 audited report](baseline-corpus3-v4.yaml)
+records 25 hidden-case successes out of 50 attempts; the [v5 audited
+report](baseline-corpus3-v5.yaml) records 43 out of 50. All 37 v4 and 48 v5
+submitted workspaces passed the fingerprint audit; unsubmitted attempts are not
+included in that audit. The reports retain per-task uncertainty and measurements.
+
+| Task | v4 successes | v5 successes |
+| --- | ---: | ---: |
+| access-log-summary | 9/10 | 10/10 |
+| host-range-expand | 6/10 | 7/10 |
+| join-orders | 2/10 | 7/10 |
+| json-lines-aggregate | 8/10 | 9/10 |
+| table-render | 0/10 | 10/10 |
+
+These are not a controlled estimate of the submission change: v4 required an
+explicit submission and used a 20-second test timeout; v5 accepted the first
+passing public test and used 10 seconds. Their revisions, binaries and context
+also differ. Both used eight workers, 32 model requests and 64 tool calls per
+attempt as ceilings, and three timing samples. The runs are scoped to these
+tasks and model; ten attempts per task leave substantial uncertainty.
+
+Surgical review of failures also drove improvements to the tools agents use:
+bounded text operations and discovery, partial matches for broad CLI searches,
+guidance on formatting output and indexed lookup, corrected library-source help,
+and guidance on avoiding repeated evaluation in callbacks. These changes landed
+before the later v4 run; execution and submission behavior changed further before
+v5. The v5 join-orders failure analysis also exposed a dotted self-reference
+diagnostic bug, fixed after that run; it has not been remeasured here.
+
+Two subsequent v5 experiments clarified the task prompt and public example:
+[host-range padding](followup-host-range-v5.yaml) and [JSON Lines non-object
+inputs](followup-json-lines-v5.yaml). The former makes the starting endpoint's
+minimum padding width observable across a digit boundary; the latter specifies
+that valid non-object JSON is invalid input and includes `null` in the example.
+Each scored 10/10 and verified all ten submitted workspaces. These are separate samples with changed task definitions,
+not replacements for the original scores or proof of a causal improvement.
+The host-range run recorded a dirty Git tree; its task-source fingerprint is in
+the report. The initial v5 run stopped during generation and is not counted.
+
+Earlier v4 exploration on the same five tasks produced 12/50 successes in the
+[32-turn run](exploration-corpus3-32turn-v4.yaml), 16/50 in the [discovery
+run](exploration-corpus3-discovery-v4.yaml), and 24/50 in the [second discovery
+run](exploration-corpus3-discovery-v2-v4.yaml). These runs include generation
+errors and have differing recorded configurations; consult their provenance
+before comparing them with each other or with the later run.
+
+Raw conversations, workspaces and hidden-case observations remain in the
+corresponding ignored `runtime/agent-bench/` directories named in the reports.
+The v4 report uses its original evaluation; its later replay is separate.
 
 ## Historical protocol-v1 baseline
 
